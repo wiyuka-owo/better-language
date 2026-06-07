@@ -1,0 +1,11 @@
+[versions]
+# Compiler plugins are bound to the exact Kotlin version. If you change this,
+# you very likely must also adjust IR / compiler-plugin API usages.
+kotlin = "2.4.0"
+
+[libraries]
+kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+kotlin-gradle-plugin-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
