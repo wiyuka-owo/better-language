@@ -1,0 +1,82 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "dev.betterlang",
+    "module": "runtime",
+    "version": "0.1.2",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "9.5.0"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "runtime-0.1.2.jar",
+          "url": "runtime-0.1.2.jar",
+          "size": 4543,
+          "sha512": "c844bb5caabf4c7ee8d66d042f4a87db8471fa6baf3811786be4cb49492e71e5bbe71ee8354349d1933d982b9ce30b9ef2fd6e5bc00d6d080c4b16fff0040ba8",
+          "sha256": "ef92c3b79c32263d620f06551d8b6f4f27ecfb2527fc2bd4673758c0958bf566",
+          "sha1": "3760ea32af09f87107496ddb23aef85e3422c81d",
+          "md5": "c7e2c73ba22fd9d77a8b942452113b9b"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 21,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.4.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "runtime-0.1.2.jar",
+          "url": "runtime-0.1.2.jar",
+          "size": 4543,
+          "sha512": "c844bb5caabf4c7ee8d66d042f4a87db8471fa6baf3811786be4cb49492e71e5bbe71ee8354349d1933d982b9ce30b9ef2fd6e5bc00d6d080c4b16fff0040ba8",
+          "sha256": "ef92c3b79c32263d620f06551d8b6f4f27ecfb2527fc2bd4673758c0958bf566",
+          "sha1": "3760ea32af09f87107496ddb23aef85e3422c81d",
+          "md5": "c7e2c73ba22fd9d77a8b942452113b9b"
+        }
+      ]
+    }
+  ]
+}
