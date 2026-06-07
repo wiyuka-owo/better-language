@@ -16,10 +16,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout master
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: master
           fetch-depth: 0
 
       - name: Set up JDK 21
@@ -50,7 +50,7 @@ jobs:
             echo "No Maven changes to commit."
           else
             git commit -m "Publish dev.betterlang ${RELEASE_VERSION}"
-            git push origin main
+            git push origin master
           fi
 
       - name: Create GitHub release
