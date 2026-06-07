@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
+import java.util.Properties
 
 class BetterLanguageGradlePlugin : KotlinCompilerPluginSupportPlugin {
 
@@ -34,7 +35,16 @@ class BetterLanguageGradlePlugin : KotlinCompilerPluginSupportPlugin {
     override fun getCompilerPluginId(): String = "dev.betterlang"
 
     override fun getPluginArtifact(): SubpluginArtifact =
-        SubpluginArtifact(groupId = "dev.betterlang", artifactId = "compiler-plugin", version = VERSION)
+        SubpluginArtifact(groupId = "dev.betterlang", artifactId = "compiler-plugin", version = pluginVersion())
+
+    private fun pluginVersion(): String {
+        val stream = javaClass.getResourceAsStream("/dev/betterlang/gradle/version.properties")
+            ?: error("betterlang version.properties not found on classpath")
+        return stream.use {
+            Properties().apply { load(it) }.getProperty("version")
+                ?: error("version missing in version.properties")
+        }
+    }
 
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean = true
 
@@ -48,9 +58,5 @@ class BetterLanguageGradlePlugin : KotlinCompilerPluginSupportPlugin {
         return project.provider {
             listOf(SubpluginOption(key = "fragmentsDir", value = dir))
         }
-    }
-
-    private companion object {
-        const val VERSION = "0.1.0"
     }
 }
