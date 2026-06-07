@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrParameterKind
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
+import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrBody
 import org.jetbrains.kotlin.ir.expressions.IrCall
 import org.jetbrains.kotlin.ir.expressions.IrConst
@@ -30,6 +31,7 @@ class BetterLangIrGenerationExtension(
         for (file in moduleFragment.files) {
             val collector = TrCollector(file.packageFqName.asString(), pluginContext)
             file.acceptChildrenVoid(collector)
+            collector.finish()
             writeFragment(file, collector.entries)
         }
     }
@@ -68,6 +70,16 @@ class BetterLangIrGenerationExtension(
 
         val entries = mutableListOf<Triple<String, String, String>>()
         private val memberStack = ArrayDeque<String>()
+        private val varStack = ArrayDeque<String>()
+        private val records = mutableListOf<Record>()
+
+        private class Record(
+            val call: IrCall,
+            val callee: IrSimpleFunction,
+            val member: String,
+            val varName: String?,
+            val texts: List<Pair<String, String>>,
+        )
 
         override fun visitElement(element: IrElement) {
             element.acceptChildrenVoid(this)
@@ -77,6 +89,12 @@ class BetterLangIrGenerationExtension(
             memberStack.addLast(declaration.name.asString())
             super.visitProperty(declaration)
             memberStack.removeLast()
+        }
+
+        override fun visitVariable(declaration: IrVariable) {
+            varStack.addLast(declaration.name.asString())
+            super.visitVariable(declaration)
+            varStack.removeLast()
         }
 
         @OptIn(UnsafeDuringIrConstructionAPI::class)
@@ -96,20 +114,43 @@ class BetterLangIrGenerationExtension(
             if (callee.hasAnnotation(MARKER_FQN)) {
                 val member = memberStack.lastOrNull()
                 if (member != null) {
-                    val key = deriveKey(packageName, member)
-                    expression.arguments
+                    val texts = expression.arguments
                         .filterIsInstance<IrFunctionExpression>()
                         .firstOrNull()
                         ?.function?.body
-                        ?.let { collectSetters(it, key) }
-                    injectKey(expression, callee, key)
+                        ?.let { collectSetters(it) }
+                        ?: emptyList()
+                    records.add(Record(expression, callee, member, varStack.lastOrNull(), texts))
                 }
             }
             super.visitCall(expression)
         }
 
+        fun finish() {
+            val unnamedCount = HashMap<String, Int>()
+            for (r in records) {
+                if (r.varName == null) unnamedCount[r.member] = (unnamedCount[r.member] ?: 0) + 1
+            }
+            val unnamedIndex = HashMap<String, Int>()
+            for (r in records) {
+                val segments = when {
+                    r.varName != null -> listOf(r.member, r.varName)
+                    (unnamedCount[r.member] ?: 0) <= 1 -> listOf(r.member)
+                    else -> {
+                        val i = unnamedIndex.getOrElse(r.member) { 0 }
+                        unnamedIndex[r.member] = i + 1
+                        listOf(r.member, i.toString())
+                    }
+                }
+                val key = deriveKey(packageName, segments)
+                for ((locale, text) in r.texts) entries.add(Triple(locale, key, text))
+                injectKey(r.call, r.callee, key)
+            }
+        }
+
         @OptIn(UnsafeDuringIrConstructionAPI::class)
-        private fun collectSetters(body: IrBody, key: String) {
+        private fun collectSetters(body: IrBody): List<Pair<String, String>> {
+            val result = mutableListOf<Pair<String, String>>()
             body.acceptChildrenVoid(object : IrVisitorVoid() {
                 override fun visitElement(element: IrElement) = element.acceptChildrenVoid(this)
 
@@ -123,18 +164,19 @@ class BetterLangIrGenerationExtension(
                     if (prop != null && fn.name.asString().startsWith("<set-")) {
                         val text = (regularArgs.firstOrNull() as? IrConst)?.value as? String
                         if (!text.isNullOrEmpty()) {
-                            entries.add(Triple(prop.owner.name.asString(), key, text))
+                            result.add(prop.owner.name.asString() to text)
                         }
                     } else if (fn.hasAnnotation(LOCALE_ENTRY_FQN)) {
                         val tag = (regularArgs.getOrNull(0) as? IrConst)?.value as? String
                         val text = (regularArgs.getOrNull(1) as? IrConst)?.value as? String
                         if (!tag.isNullOrEmpty() && !text.isNullOrEmpty()) {
-                            entries.add(Triple(tag, key, text))
+                            result.add(tag to text)
                         }
                     }
                     super.visitCall(expression)
                 }
             })
+            return result
         }
 
         @OptIn(UnsafeDuringIrConstructionAPI::class)
@@ -148,16 +190,18 @@ class BetterLangIrGenerationExtension(
             )
         }
 
-        private fun deriveKey(pkg: String, member: String): String {
-            val snake = buildString {
-                member.forEachIndexed { i, c ->
-                    if (c.isUpperCase()) {
-                        if (i > 0 && member[i - 1] != '_') append('_')
-                        append(c.lowercaseChar())
-                    } else append(c)
-                }
+        private fun deriveKey(pkg: String, members: List<String>): String {
+            val path = members.joinToString(".") { toSnake(it) }
+            return if (pkg.isEmpty()) path else "$pkg.$path"
+        }
+
+        private fun toSnake(name: String): String = buildString {
+            name.forEachIndexed { i, c ->
+                if (c.isUpperCase()) {
+                    if (i > 0 && name[i - 1] != '_') append('_')
+                    append(c.lowercaseChar())
+                } else append(c)
             }
-            return if (pkg.isEmpty()) snake else "$pkg.$snake"
         }
 
         companion object {
